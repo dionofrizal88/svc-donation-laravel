@@ -217,7 +217,7 @@ class DonationController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Midtrans Webhook Error: ' . $e->getMessage());
-dd($e->getMessage());
+
             return response()->json([
                 'error' => 'There was an error processing the webhook. Please try again later.',
             ], 500);

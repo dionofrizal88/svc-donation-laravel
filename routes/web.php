@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StudentCardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,3 +17,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/student-card', [StudentCardController::class, 'index']);
+Route::post('/student-card/generate', [StudentCardController::class, 'generatePDF'])->name('student-card.generate');
