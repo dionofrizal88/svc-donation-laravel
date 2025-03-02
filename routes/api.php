@@ -22,4 +22,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::controller(DonationController::class)->group(function () {
     Route::post('/donation', 'createDonation');
     Route::post('/donation/payment', 'createDonationPayment');
+    Route::post('/donation/webhook', 'donationWebhook');
 });
