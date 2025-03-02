@@ -90,10 +90,23 @@ class DonationController extends Controller
         try {
             $request->validate([
                 'amount' => 'required|numeric',
-                'payment_method' => 'required|string',
+                'payment_method' => 'required|string|in:bank_transfer,gopay',
                 'snap_token' => 'required|string',
-                'order_id' => 'required|string', 
+                'order_id' => 'required|string',
             ]);
+
+            if ($request->payment_method === 'bank_transfer') {
+                $request->validate([
+                    'bank' => 'required|string|in:bri,bni,mandiri',
+                ]);
+            }
+
+            $donation = Donation::where('order_id', $request->order_id)->first();
+            if ($donation === null) {
+                return response()->json([
+                    'error' => 'Donation not found'
+                ], 404);
+            }
     
             $midtransServerKey = config('midtrans.server_key'); 
             $mintransUrl = config('midtrans.base_url') . '/v2/charge';
@@ -152,11 +165,20 @@ class DonationController extends Controller
 
         try {
             $request->validate([
-                'transaction_status' => 'required|string',
-                'payment_type' => 'required|string',
+                'transaction_status' => 'required|string|in:settlement,pending,deny,expire,cancel',
+                'payment_type' => 'required|string|in:bank_transfer,gopay',
                 'order_id' => 'required|string',
                 'fraud_status' => 'nullable|string',
             ]);
+
+            $input = $request->order_id.$request->status_code.$request->gross_amount.config('midtrans.server_key');
+            $signature = openssl_digest($input, 'sha512');
+
+            if ($signature != $request->signature_key) {
+                return response()->json([
+                    'error' => 'Forbidden Access'
+                ], 403);
+            }
 
             $notif = new Notification();
 
@@ -169,16 +191,6 @@ class DonationController extends Controller
                 $donation = Donation::where('order_id', $orderId)->first();
 
                 switch ($transaction) {
-                    case 'capture':
-                        if ($type == 'credit_card') {
-                            if ($fraud == 'challenge') {
-                                $donation->setStatusPending();
-                            } else {
-                                $donation->setStatusSuccess();
-                            }
-                        }
-                        break;
-
                     case 'settlement':
                         $donation->setStatusSuccess();
                         break;
